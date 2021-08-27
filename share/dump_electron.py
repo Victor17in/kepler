@@ -1,7 +1,6 @@
+#!/usr/bin/env python
 
-
-
-from Gaugi.messenger import LoggingLevel, Logger
+from Gaugi.messenger import LoggingLevel
 from Gaugi import ToolSvc
 
 from kepler.core import ElectronLoop
@@ -10,7 +9,6 @@ from kepler.core.enumerators import Dataframe as DataframeEnum
 import argparse
 import sys,os
 
-mainLogger = Logger.getModuleLogger("job")
 parser = argparse.ArgumentParser(description = '', add_help = False)
 parser = argparse.ArgumentParser()
 

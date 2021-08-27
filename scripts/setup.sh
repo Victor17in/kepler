@@ -2,4 +2,4 @@
 
 export PYTHONPATH=$PYTHONPATH:$(pwd)
 
-export KPL_PATH=$(pwd)
+export PATH=`pwd`/share:$PATH
