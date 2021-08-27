@@ -101,7 +101,7 @@ filter.setCutValue( SelectionType.SelectionPID, args.pidname )
 filter.setCutValue( EtCutType.L2CaloAbove, args.et_min )
 filter.setCutValue( EtCutType.L2CaloBelow, args.et_max )
 
-
+ToolSvc+=filter
 
 dumper = ElectronDumper("Dumper", 'test', eval(args.et_bins), eval(args.eta_bins), dumpRings=True)
 dumper+=extra_keys

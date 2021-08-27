@@ -246,7 +246,7 @@ def install_Zee_ringer_v11():
 ###########################################################
 ################## Testing 2020 tuning  ###################
 ###########################################################
-def installElectronL2RingerSelector_v1_el():
+def install_Zee_ringer_v1_el():
 
   # Using shower shapes + rings here
 
@@ -300,7 +300,7 @@ def installElectronL2RingerSelector_v1_el():
 ###########################################################
 ################## Testing 2020 tuning  ###################
 ###########################################################
-def installElectronL2RingerSelector_v2_el():
+def install_Zee_ringer_v2_el():
 
   # Using shower shapes + rings here
 
