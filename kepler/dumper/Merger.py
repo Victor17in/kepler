@@ -1,7 +1,7 @@
 
 
 
-__all__ = ["CreateData"]
+__all__ = []
 
 from Gaugi import StatusCode, NotSet, retrieve_kw, progressbar
 from Gaugi import csvStr2List, expandFolders, save, load

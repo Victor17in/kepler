@@ -110,9 +110,9 @@ def attach( hypos ):
   emulator = ToolSvc.retrieve( "Emulator" )
   names = []
   for hypo in hypos:
-    names.append( hypo.name() )
     if not emulator.isValid( hypo.name() ):
       emulator+=hypo
+      names.append( hypo.name() )
   return names
 
 

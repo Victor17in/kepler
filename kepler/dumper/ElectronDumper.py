@@ -1,70 +1,78 @@
 
-__all__ = ["Collector"]
+__all__ = ["ElectronDumper"]
 
 
-from kepler.core import Dataframe as DataframeEnum
-from Gaugi import StatusCode, progressbar
-from Gaugi import csvStr2List, expandFolders, save, load
-from Gaugi.messenger.macros import *
-from Gaugi.messenger  import Logger
-from Gaugi.constants import GeV
-from Gaugi import EnumStringification
+from kepler.core import Dataframe as DataframeEnum 
+from kepler.events import EgammaParameters
+from kepler.utils import get_bin_indexs
+
 from Gaugi import Algorithm
+from Gaugi import StatusCode
+from Gaugi import save, load
+from Gaugi.messenger.macros import *
+from Gaugi.constants import GeV
+
 import numpy as np
 
 
-class Dumper( Algorithm ):
+class ElectronDumper( Algorithm ):
 
-  def __init__(self, name, **kw):
+
+  #
+  # constructor
+  #
+  def __init__(self, name, output, etbins, etabins, dumpRings=True ):
     
     Algorithm.__init__(self, name)
-    self._event = {}
-    self._event_label = []
-    self._save_these_bins = list()
-    self._extra_features = list()
-    
-    self.declareProperty( "OutputFile", 'sample.pic', "The output file name"       )
+    self.__event = {}
+    self.__event_label = []
+    self.__save_these_bins = list()
+    self.__extra_features = list()
+    self.__outputname = output
+    self.__etbins = etbins
+    self.__etabins = etabins
+    self.dumpRings = dumpRings
 
 
-    for key, value in kw.items():
-      self.setProperty(key, value)
+ 
+  def __add__( self, key ):
+    if type(key) is str:
+      key = [key]
+    self.__extra_features.extend( key )
+    return self
 
 
-  def setEtBinningValues( self, etbins ):
-    self._etbins = etbins
-
-
-  def setEtaBinningValues( self, etabins ):
-    self._etabins = etabins
-
-
-  def AddFeature( self, key ):
-    self._extra_features.append( key )
-
-
+  #
+  # Initialize dumper
+  #
   def initialize(self):
+
+
     Algorithm.initialize(self)
-    for etBinIdx in range(len(self._etbins)-1):
-      for etaBinIdx in range(len(self._etabins)-1):
-        self._event[ 'et%d_eta%d' % (etBinIdx,etaBinIdx) ] = None
+
+    # build map
+    for etBinIdx in range(len(self.__etbins)-1):
+      for etaBinIdx in range(len(self.__etabins)-1):
+        self.__event[ 'et%d_eta%d' % (etBinIdx,etaBinIdx) ] = None
 
 
-    self._event_label.append( 'avgmu' )
+    self.__event_label.append( 'avgmu' )
 
     # Add fast calo ringsE
-    self._event_label.extend( [ 'L2Calo_ring_%d'%r for r in range(100) ] )
+    if self.dumpRings:
+      self.__event_label.extend( [ 'L2Calo_ring_%d'%r for r in range(100) ] )
 
-    self._event_label.extend( [ 'L2Calo_et',
+    self.__event_label.extend( [ 'L2Calo_et',
                                 'L2Calo_eta',
                                 'L2Calo_phi',
                                 'L2Calo_reta',
-                                'L2Calo_ehad1', # new
+                                'L2Calo_ehad1', 
                                 'L2Calo_eratio',
-                                'L2Calo_f1', # new
-                                'L2Calo_f3', # new
-                                'L2Calo_weta2', # new
-                                'L2Calo_wstot', # new
-                                'L2Calo_e2tsts1', # new
+                                'L2Calo_f1', 
+                                'L2Calo_f3', 
+                                'L2Calo_weta2', 
+                                'L2Calo_wstot', 
+                                'L2Calo_e2tsts1', 
                                 'L2Electron_hastrack',
                                 'L2Electron_pt',
                                 'L2Electron_eta',
@@ -76,10 +84,9 @@ class Dumper( Algorithm ):
 
                                 ] )
 
- 
 
-
-    self._event_label.extend( [
+    self.__event_label.extend( [
+                                'RunNumber',
                                 # Offline variables
                                 'et',
                                 'eta',
@@ -107,47 +114,26 @@ class Dumper( Algorithm ):
                                 'deltaPhi2',
                                 'deltaPhi2Rescaled',
                                 'DeltaPOverP',
-
-                                ] )
-
-
-    
-    if self._dataframe is DataframeEnum.Electron_v1:
-      self._event_label.extend( [
-                                # Offline variables
-                                'el_lhtight',
-                                'el_lhmedium',
-                                'el_lhloose',
-                                'el_lhvloose',
-                                ] )
-    elif self._dataframe is DataframeEnum.Photon_v1:
-      self._event_label.extend( [
-                                # Offline variables
-                                'ph_tight',
-                                'ph_medium',
-                                'ph_loose',
-                                ] )
-    else:
-      self._event_label.extend( [
-                                # Offline variables
                                 'el_lhtight',
                                 'el_lhmedium',
                                 'el_lhloose',
                                 'el_lhvloose',
                                 ] )
 
-
-    self._event_label.extend( self._extra_features )
+    self.__event_label.extend( self.__extra_features )
 
     return StatusCode.SUCCESS
 
 
+  #
+  # fill current event
+  #
   def fill( self, key , event ):
 
-    if self._event[key]:
-      self._event[key].append( event )
+    if self.__event[key]:
+      self.__event[key].append( event )
     else:
-      self._event[key] = [event]
+      self.__event[key] = [event]
 
 
   #
@@ -156,28 +142,19 @@ class Dumper( Algorithm ):
   def execute(self, context):
 
 
-    if self._dataframe is DataframeEnum.Electron_v1:
-      elCont    = context.getHandler( "ElectronContainer" )
-      trkCont   = elCont.trackParticle()
-      hasTrack = True if trkCont.size()>0 else False
+    elCont    = context.getHandler( "ElectronContainer" )
+    trkCont   = elCont.trackParticle()
+    hasTrack = True if trkCont.size()>0 else False
    
-      fcElCont = context.getHandler("HLT__TrigElectronContainer" )
-      hasFcTrack = True if fcElCont.size()>0 else False
+    fcElCont = context.getHandler("HLT__TrigElectronContainer" )
+    hasFcTrack = True if fcElCont.size()>0 else False
 
-    elif self._dataframe is DataframeEnum.Photon_v1:
-      elCont    = context.getHandler( "PhotonContainer" )
-      trkCont   = None
-      hasTrack  = False
-      hasFcTrack = False
 
     eventInfo = context.getHandler( "EventInfoContainer" )
     fc        = context.getHandler( "HLT__TrigEMClusterContainer" )
     
 
-
-
-    from EventSelectionTool import RetrieveBinningIdx
-    etBinIdx, etaBinIdx = RetrieveBinningIdx( fc.et()/1000., abs(fc.eta()), self._etbins, self._etabins, logger=self._logger )
+    etBinIdx, etaBinIdx = get_bin_indexs( fc.et()/1000., abs(fc.eta()), self.__etbins, self.__etabins, logger=self._logger )
     if etBinIdx < 0 or etaBinIdx < 0:
       return StatusCode.SUCCESS
 
@@ -189,7 +166,9 @@ class Dumper( Algorithm ):
     event_row.append( eventInfo.avgmu() )
 
     # fast calo features
-    event_row.extend( fc.ringsE()   )
+    if self.dumpRings:
+      event_row.extend( fc.ringsE()   )
+    
     event_row.append( fc.et()       )
     event_row.append( fc.eta()      )
     event_row.append( fc.phi()      )
@@ -202,9 +181,6 @@ class Dumper( Algorithm ):
     event_row.append( fc.wstot()    )
     event_row.append( fc.e2tsts1()  )
 
-
-
-    
     if hasFcTrack:
       fcElCont.setToBeClosestThanCluster()
       event_row.append( True )
@@ -218,16 +194,16 @@ class Dumper( Algorithm ):
     else:
       event_row.extend( [False, -1, -1, -1, -1, -1, -1, -1] )
 
+    # Run number
+    event_row.append( eventInfo.RunNumber() )
 
 
-      
     # Offline Shower shapes
     event_row.append( elCont.et() )
     event_row.append( elCont.eta() )
     event_row.append( elCont.phi() )
     
     
-    from EventAtlas import EgammaParameters
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad1 ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.f3 ) )
@@ -237,7 +213,6 @@ class Dumper( Algorithm ):
     event_row.append( elCont.showerShapeValue( EgammaParameters.wtots1 ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Eratio ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.f1 ) )
-
 
     # Offline track variables
     if hasTrack:
@@ -260,55 +235,45 @@ class Dumper( Algorithm ):
     
 
 
-    if self._dataframe is DataframeEnum.Electron_v1:
-      event_row.append( elCont.accept( "el_lhtight"  ) )
-      event_row.append( elCont.accept( "el_lhmedium" ) )
-      event_row.append( elCont.accept( "el_lhloose"  ) )
-      event_row.append( elCont.accept( "el_lhvloose" ) )
+    event_row.append( elCont.accept( "el_lhtight"  ) )
+    event_row.append( elCont.accept( "el_lhmedium" ) )
+    event_row.append( elCont.accept( "el_lhloose"  ) )
+    event_row.append( elCont.accept( "el_lhvloose" ) )
  
-
-
-    elif self._dataframe is DataframeEnum.Photon_v1:
-      event_row.append( elCont.accept( "ph_tight"  ) )
-      event_row.append( elCont.accept( "ph_medium" ) )
-      event_row.append( elCont.accept( "ph_loose"  ) )
       
     dec = context.getHandler("MenuContainer")
 
-    for feature in self._extra_features:
+    for feature in self.__extra_features:
       passed = dec.accept(feature).getCutResult('Pass')
       event_row.append( passed )
 
 
     self.fill(key , event_row)
-
-
     return StatusCode.SUCCESS
 
 
   def finalize( self ):
 
     from Gaugi import save, mkdir_p
+    outputname = self.__outputname
 
-    outputname = self.getProperty("OutputFile")
-
-    for etBinIdx in range(len(self._etbins)-1):
-      for etaBinIdx in range(len(self._etabins)-1):
+    for etBinIdx in range(len(self.__etbins)-1):
+      for etaBinIdx in range(len(self.__etabins)-1):
 
         key =  'et%d_eta%d' % (etBinIdx,etaBinIdx)
         mkdir_p( outputname )
-        if self._event[key] is None:
+        if self.__event[key] is None:
           continue
 
         d = {
-            "features"  : self._event_label,
-            "etBins"    : self._etbins,
-            "etaBins"   : self._etabins,
+            "features"  : self.__event_label,
+            "etBins"    : self.__etbins,
+            "etaBins"   : self.__etabins,
             "etBinIdx"  : etBinIdx,
             "etaBinIdx" : etaBinIdx
             }
 
-        d[ 'pattern_'+key ] = np.array( self._event[key] )
+        d[ 'pattern_'+key ] = np.array( self.__event[key] )
         MSG_INFO( self, 'Saving %s with : (%d, %d)', key, d['pattern_'+key].shape[0], d['pattern_'+key].shape[1] )
         save( d, outputname+'/'+outputname+"_"+key , protocol = 'savez_compressed')
     return StatusCode.SUCCESS

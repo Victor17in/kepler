@@ -2,9 +2,9 @@
 
 __all__ = []
 
-from . import Dumper
-__all__.extend( Dumper.__all__ )
-from .Dumper import *
+from . import ElectronDumper
+__all__.extend( ElectronDumper.__all__ )
+from .ElectronDumper import *
 
 from . import Merger
 __all__.extend( Merger.__all__ )

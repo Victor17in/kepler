@@ -10,6 +10,11 @@ from Gaugi import ToolSvc
 from kepler.menu import treat_trigger_dict_type
 from kepler.emulator import Accept
 
+
+import os 
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
+
+
 #
 # Selector tool
 #
@@ -291,7 +296,7 @@ class RingerSelectorTool(Algorithm):
 
   def accept( self, context):
 
-    accept = Accept(self.name(), ['Pass', False])
+    accept = Accept(self.name(), [('Pass', False)])
     accept.setDecor( "discriminant",-999 )
     fc = context.getHandler("HLT__TrigEMClusterContainer")
     eventInfo = context.getHandler( "EventInfoContainer" )
