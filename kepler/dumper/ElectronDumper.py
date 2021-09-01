@@ -47,7 +47,6 @@ class ElectronDumper( Algorithm ):
   #
   def initialize(self):
 
-
     Algorithm.initialize(self)
 
     # build map
@@ -56,37 +55,68 @@ class ElectronDumper( Algorithm ):
         self.__event[ 'et%d_eta%d' % (etBinIdx,etaBinIdx) ] = None
 
 
-    self.__event_label.append( 'avgmu' )
+    #
+    # Event info
+    #
+    self.__event_label.extend( ['RunNumber', 'avgmu'] )
+
+    #
+    # Fast calo
+    #
+    self.__event_label.extend( [
+                                'trig_L2_cl_et',
+                                'trig_L2_cl_eta',
+                                'trig_L2_cl_phi',
+                                'trig_L2_cl_reta',
+                                'trig_L2_cl_ehad1', 
+                                'trig_L2_cl_eratio',
+                                'trig_L2_cl_f1', 
+                                'trig_L2_cl_f3', 
+                                'trig_L2_cl_weta2', 
+                                'trig_L2_cl_wstot', 
+                                'trig_L2_cl_e2tsts1'] )
 
     # Add fast calo ringsE
     if self.dumpRings:
-      self.__event_label.extend( [ 'L2Calo_ring_%d'%r for r in range(100) ] )
+      self.__event_label.extend( [ 'trig_L2_cl_ring_%d'%r for r in range(100) ] )
 
-    self.__event_label.extend( [ 'L2Calo_et',
-                                'L2Calo_eta',
-                                'L2Calo_phi',
-                                'L2Calo_reta',
-                                'L2Calo_ehad1', 
-                                'L2Calo_eratio',
-                                'L2Calo_f1', 
-                                'L2Calo_f3', 
-                                'L2Calo_weta2', 
-                                'L2Calo_wstot', 
-                                'L2Calo_e2tsts1', 
-                                'L2Electron_hastrack',
-                                'L2Electron_pt',
-                                'L2Electron_eta',
-                                'L2Electron_phi',
-                                'L2Electron_caloEta',
-                                'L2Electron_trkClusDeta',
-                                'L2Electron_trkClusDphi',
-                                'L2Electron_etOverPt',
 
+    #
+    # Fast electron
+    #
+    self.__event_label.extend( [
+                                'trig_L2_el_hastrack',
+                                'trig_L2_el_pt',
+                                'trig_L2_el_eta',
+                                'trig_L2_el_phi',
+                                'trig_L2_el_caloEta',
+                                'trig_L2_el_trkClusDeta',
+                                'trig_L2_el_trkClusDphi',
+                                'trig_L2_el_etOverPt'] )
+
+    #
+    # Calo cluster
+    #
+    self.__event_label.extend( [
+                                'trig_EF_cl_et', # this is a list
+                                ] )
+
+    #
+    # HLT electron
+    #
+    self.__event_label.extend( [       
+                                'trig_EF_el_et', # this is a list
+                                'trig_EF_el_lhtight', # this is a list
+                                'trig_EF_el_lhmedium', # this is a list
+                                'trig_EF_el_lhloose', # this is a list
+                                'trig_EF_el_lhvloose', # this is a list
                                 ] )
 
 
+    #
+    # Offline variables
+    #
     self.__event_label.extend( [
-                                'RunNumber',
                                 # Offline variables
                                 'et',
                                 'eta',
@@ -114,14 +144,18 @@ class ElectronDumper( Algorithm ):
                                 'deltaPhi2',
                                 'deltaPhi2Rescaled',
                                 'DeltaPOverP',
+                                'DeltaR_TaP',
                                 'el_lhtight',
                                 'el_lhmedium',
                                 'el_lhloose',
                                 'el_lhvloose',
                                 ] )
 
+
+  
     self.__event_label.extend( self.__extra_features )
 
+    print(len(self.__event_label))
     return StatusCode.SUCCESS
 
 
@@ -142,33 +176,26 @@ class ElectronDumper( Algorithm ):
   def execute(self, context):
 
 
-    elCont    = context.getHandler( "ElectronContainer" )
-    trkCont   = elCont.trackParticle()
-    hasTrack = True if trkCont.size()>0 else False
-   
-    fcElCont = context.getHandler("HLT__TrigElectronContainer" )
-    hasFcTrack = True if fcElCont.size()>0 else False
 
 
-    eventInfo = context.getHandler( "EventInfoContainer" )
-    fc        = context.getHandler( "HLT__TrigEMClusterContainer" )
-    
-
-    etBinIdx, etaBinIdx = get_bin_indexs( fc.et()/1000., abs(fc.eta()), self.__etbins, self.__etabins, logger=self._logger )
-    if etBinIdx < 0 or etaBinIdx < 0:
-      return StatusCode.SUCCESS
-
-
-    key = ('et%d_eta%d') % (etBinIdx, etaBinIdx)
 
     event_row = list()
+
+    #
     # event info
+    #
+    eventInfo = context.getHandler( "EventInfoContainer" )
+    event_row.append( eventInfo.RunNumber() )
     event_row.append( eventInfo.avgmu() )
 
-    # fast calo features
-    if self.dumpRings:
-      event_row.extend( fc.ringsE()   )
-    
+
+    #
+    # Fast Calo features
+    #
+    fc = context.getHandler( "HLT__TrigEMClusterContainer" )
+
+
+
     event_row.append( fc.et()       )
     event_row.append( fc.eta()      )
     event_row.append( fc.phi()      )
@@ -180,7 +207,14 @@ class ElectronDumper( Algorithm ):
     event_row.append( fc.weta2()    )
     event_row.append( fc.wstot()    )
     event_row.append( fc.e2tsts1()  )
-
+    if self.dumpRings:
+      event_row.extend( fc.ringsE()   )
+   
+    #
+    # Fast electron features
+    #
+    fcElCont = context.getHandler("HLT__TrigElectronContainer" )
+    hasFcTrack = True if fcElCont.size()>0 else False
     if hasFcTrack:
       fcElCont.setToBeClosestThanCluster()
       event_row.append( True )
@@ -194,16 +228,38 @@ class ElectronDumper( Algorithm ):
     else:
       event_row.extend( [False, -1, -1, -1, -1, -1, -1, -1] )
 
-    # Run number
-    event_row.append( eventInfo.RunNumber() )
 
+    #
+    # Calo Cluster
+    #
+    clCont = context.getHandler("HLT__CaloClusterContainer")
+    event_row.append( np.array([cl.et() for cl in clCont]))
 
+    
+    #
+    # HLT electron
+    #
+    elCont = context.getHandler("HLT__ElectronContainer")
+    event_row.append(np.array([el.et() for el in elCont]))
+    # Adding PID LH decisions for each WP
+    event_row.append(np.array([el.accept("trig_EF_el_lhtight") for el in elCont]))
+    event_row.append(np.array([el.accept("trig_EF_el_lhmedium") for el in elCont]))
+    event_row.append(np.array([el.accept("trig_EF_el_lhloose") for el in elCont]))
+    event_row.append(np.array([el.accept("trig_EF_el_lhvloose") for el in elCont]))
+
+      
+    #
+    # Offline variables
+    #
+
+    elCont   = context.getHandler( "ElectronContainer" )
+    trkCont  = elCont.trackParticle()
+    hasTrack = True if trkCont.size()>0 else False
+   
     # Offline Shower shapes
     event_row.append( elCont.et() )
     event_row.append( elCont.eta() )
     event_row.append( elCont.phi() )
-    
-    
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad1 ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.f3 ) )
@@ -213,7 +269,6 @@ class ElectronDumper( Algorithm ):
     event_row.append( elCont.showerShapeValue( EgammaParameters.wtots1 ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Eratio ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.f1 ) )
-
     # Offline track variables
     if hasTrack:
       event_row.append( hasTrack)
@@ -228,19 +283,20 @@ class ElectronDumper( Algorithm ):
       event_row.append( elCont.dphi2() )
       event_row.append( elCont.deltaPhiRescaled2() )
       event_row.append( trkCont.DeltaPOverP() )
-
     else:
       event_row.extend( [False, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] )
 
-    
-
-
+    event_row.append( elCont.deltaR() )
+    # Adding Offline PID LH decisions
     event_row.append( elCont.accept( "el_lhtight"  ) )
     event_row.append( elCont.accept( "el_lhmedium" ) )
     event_row.append( elCont.accept( "el_lhloose"  ) )
     event_row.append( elCont.accept( "el_lhvloose" ) )
  
-      
+    #
+    # Decorate with other decisions
+    #
+
     dec = context.getHandler("MenuContainer")
 
     for feature in self.__extra_features:
@@ -248,6 +304,11 @@ class ElectronDumper( Algorithm ):
       event_row.append( passed )
 
 
+    etBinIdx, etaBinIdx = get_bin_indexs( fc.et()/1000., abs(fc.eta()), self.__etbins, self.__etabins, logger=self._logger )
+    if etBinIdx < 0 or etaBinIdx < 0:
+      return StatusCode.SUCCESS
+
+    key = ('et%d_eta%d') % (etBinIdx, etaBinIdx)
     self.fill(key , event_row)
     return StatusCode.SUCCESS
 

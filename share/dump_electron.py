@@ -29,12 +29,16 @@ parser.add_argument('-n','--nov', action='store',
     help = "Number of events.")
 
 parser.add_argument('-p','--path', action='store',
-    dest='path', required = False, type=str, default='*/HLT/Egamma/Egamma/probes',
+    dest='path', required = False, default='*/HLT/Physval/Egamma/probes', type=str,
     help = "Ntuple base path.")
 
 parser.add_argument('-l','--level', action='store',
     dest='level', required = False, type=str, default='INFO',
     help = "VERBOSE/INFO/DEBUG/WARNING/ERROR/FATAL")
+
+parser.add_argument('--mute', action='store_true',
+    dest='mute', required = False, 
+    help = "Use this for production. quite output")
 
 #
 # event selection configuration
@@ -60,6 +64,10 @@ parser.add_argument('--et_max', action='store',
     dest='et_max', required = False, type=int, default=1000,
     help = "Fast calo max et value in GeV") 
 
+#parser.add_argument('--old_path', action='store_true',
+#    dest='old_path', required = False, 
+#    help = "Use 2017 physval ntuple path") 
+
 
 
 
@@ -69,21 +77,23 @@ if len(sys.argv)==1:
 
 args = parser.parse_args()
 
-# electron loop
+
+
 acc = ElectronLoop(  "EventATLASLoop",
                      inputFiles = args.inputFiles,
-                     treePath   = args.path,
+                     treePath   = eval(args.path),
                      dataframe  = DataframeEnum.Electron_v1,
                      outputFile = args.outputFile,
                      level      = getattr(LoggingLevel, args.level),
+                     mute_progressbar = args.mute,
                   )
 
 
-from kepler.menu.install import *
 
-extra_keys = install_commom_features_for_electron()
 #extra_keys+= install_Zee_ringer_v6()
 #extra_keys+= install_Zee_ringer_v8()
+from kepler.menu.install import install_commom_features_for_electron_dump
+extra_features = install_commom_features_for_electron_dump() 
 
 
 from kepler.dumper import ElectronDumper
@@ -95,14 +105,16 @@ filter = Filter("ElectronFilter")
 
 filter.setCutValue(SelectionType.SelectionOnlineWithRings)
 filter.setCutValue(EtCutType.OfflineAbove, 2) # this is default for now
-filter.setCutValue( SelectionType.SelectionPID, args.pidname )
+filter.setCutValue( SelectionType.SelectionPID, eval(args.pidname) )
 filter.setCutValue( EtCutType.L2CaloAbove, args.et_min )
 filter.setCutValue( EtCutType.L2CaloBelow, args.et_max )
 
 ToolSvc+=filter
 
-dumper = ElectronDumper("Dumper", 'test', eval(args.et_bins), eval(args.eta_bins), dumpRings=True)
-dumper+=extra_keys
+output = args.outputFile.replace('.root','')
+
+dumper = ElectronDumper("Dumper", output, eval(args.et_bins), eval(args.eta_bins), dumpRings=True)
+dumper += extra_features
 ToolSvc+=dumper
 
 acc.run(args.nov)

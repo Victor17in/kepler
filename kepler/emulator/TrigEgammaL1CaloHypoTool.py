@@ -54,7 +54,6 @@ class TrigEgammaL1CaloHypoTool( Algorithm ):
     self.__l1item = l1item
     self.__l1type = l1item.replace('L1_','')
     self.__l1threshold = float(re.findall('\d+', self.__l1type)[0])
-
     self.init_lock()
     return StatusCode.SUCCESS
 
@@ -73,14 +72,14 @@ class TrigEgammaL1CaloHypoTool( Algorithm ):
   def accept( self, context ):
 
     l1 = context.getHandler( "HLT__EmTauRoIContainer" )
-    passed = self.emulation( l1, self.__l1type, self.__l1item, self.__l1threshold )
+    passed = self.emulate( l1, self.__l1type, self.__l1item, self.__l1threshold )
     return Accept( self.name(), [ ("Pass", passed ) ] )
 
 
   #
   # L1 emulation
   #
-  def emulation(self, l1, l1type, L1Item, l1threshold):
+  def emulate(self, l1, l1type, L1Item, l1threshold):
   
     workingPoint = self.getProperty( "WPNames" )
 

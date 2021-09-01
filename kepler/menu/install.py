@@ -1,7 +1,7 @@
 
 
 __all__ =  [
-              "install_commom_features_for_electron",
+              "install_commom_features_for_electron_dump",
               "install_Zee_ringer_v6",
               "install_Zee_ringer_v8",
            ]
@@ -14,22 +14,22 @@ import os
 
 
 
-def install_commom_features_for_electron():
+def install_commom_features_for_electron_dump():
 
   hypos = []
 
   # configure L1 items
   from kepler.emulator.TrigEgammaL1CaloHypoTool import configure
   hypos = [
-            configure("L1_EM3"     , "L1EM3"     ),
-            configure("L1_EM7"     , "L1EM7"     ),
-            configure("L1_EM15VH"  , "L1EM15VH"  ),
-            configure("L1_EM15VHI" , "L1EM15VHI" ),
-            configure("L1_EM20VH"  , "L1EM20VH"  ),
-            configure("L1_EM20VHI" , "L1EM20VHI" ),
-            configure("L1_EM22VH"  , "L1EM22VH"  ),
-            configure("L1_EM22VHI" , "L1EM22VHI"  ),
-            configure("L1_EM24VHI" , "L1EM24VHI"  ),
+            configure("L1_EM3"     , "L1_EM3"     ),
+            configure("L1_EM7"     , "L1_EM7"     ),
+            configure("L1_EM15VH"  , "L1_EM15VH"  ),
+            configure("L1_EM15VHI" , "L1_EM15VHI" ),
+            configure("L1_EM20VH"  , "L1_EM20VH"  ),
+            configure("L1_EM20VHI" , "L1_EM20VHI" ),
+            configure("L1_EM22VH"  , "L1_EM22VH"  ),
+            configure("L1_EM22VHI" , "L1_EM22VHI"  ),
+            configure("L1_EM24VHI" , "L1_EM24VHI"  ),
   ]
 
 
@@ -38,26 +38,19 @@ def install_commom_features_for_electron():
   for pidname in ['lhvloose', 'lhloose','lhmedium', 'lhtight']:
     # T2Calo
     hypos+= [
-            configure('L2_%s_et0to12'%pidname   , 0  , pidname),
-            configure('L2_%s_et12to20'%pidname  , 12 , pidname),
-            configure('L2_%s_et22toInf'%pidname , 22 , pidname),
+            configure('trig_L2_cl_%s_et0to12'%pidname   , 0  , pidname),
+            configure('trig_L2_cl_%s_et12to20'%pidname  , 12 , pidname),
+            configure('trig_L2_cl_%s_et22toInf'%pidname , 22 , pidname),
     ]
-
-
-  # configure HLT LH decision
-  from kepler.emulator.TrigEgammaPrecisionElectronHypoTool import configure
-  for pidname in ['lhvloose', 'lhloose','lhmedium', 'lhtight']:
-    # HLT LH
-    hypos += [configure('HLT_%s'%pidname,  pidname)]
 
 
   # configure L2 electron decisions for each bin
   from kepler.emulator.TrigEgammaFastElectronHypoTool import configure
   hypos += [
-            configure('L2_el_pt0to15'   , 0 ),
-            configure('L2_el_pt15to20'  , 15),
-            configure('L2_el_pt20to50'  , 20),
-            configure('L2_el_pt50toInf' , 50),
+            configure('trig_L2_el_cut_pt0to15'   , 0 ),
+            configure('trig_L2_el_cut_pt15to20'  , 15),
+            configure('trig_L2_el_cut_pt20to50'  , 20),
+            configure('trig_L2_el_cut_pt50toInf' , 50),
           ]
 
   return attach(hypos)
