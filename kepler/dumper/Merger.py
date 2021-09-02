@@ -129,7 +129,6 @@ class Merger(Logger):
 
       if debug:
         sgnSubFileList=sgnSubFileList[0:11]
-
       reader = ReaderPool( sgnSubFileList, DataReader(self._skip_these_keys), self._nFilesPerJob, self._nthreads )
       MSG_INFO( self, "Reading signal files..." )
       outputs = reader()
@@ -169,7 +168,7 @@ class Merger(Logger):
       #if not etaBins:  etaBins = sgnDict["etaBins"]
       etaBins = sgnDict["etaBins"]
 
-      d['data'] = np.concatenate( (sgnDict['pattern_'+id], bkgDict['pattern_'+id]) ).astype('float32')
+      d['data'] = np.concatenate( (sgnDict['pattern_'+id], bkgDict['pattern_'+id]) )
       d['target'] = np.concatenate( ( np.ones( (sgnDict['pattern_'+id].shape[0],) ),  np.zeros( (bkgDict['pattern_'+id].shape[0],) ) ) ).astype('int16')
 
       if sgnDict['pattern_'+id] is not None:

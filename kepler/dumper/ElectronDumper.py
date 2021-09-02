@@ -6,6 +6,7 @@ from kepler.core import Dataframe as DataframeEnum
 from kepler.events import EgammaParameters
 from kepler.utils import get_bin_indexs
 
+
 from Gaugi import Algorithm
 from Gaugi import StatusCode
 from Gaugi import save, load
