@@ -32,3 +32,7 @@ from .dumper import *
 from . import filter
 __all__.extend(filter.__all__)
 from .filter import *
+
+from . import pandas
+__all__.extend(pandas.__all__)
+from .pandas import *

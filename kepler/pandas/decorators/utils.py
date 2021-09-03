@@ -1,17 +1,34 @@
 
-__all__ = ['RingerDecorator']
+__all__ = ['load', 'drop_ring_columns', 'RingerDecorator']
 
 from Gaugi import Logger
 from Gaugi.messenger.macros import *
-from Gaugi import load, GeV
+from Gaugi import load as gload
+from Gaugi import GeV
 
 import pandas as pd
 import numpy as np
 
 from kepler.utils import load_ringer_models
-from kepler.emulator import get_chain_dict
 
+#
+# Load npz format from kepler dumper and convert to pandas like
+#
+def load( path ):
+    d = gload(path)
+    df = pd.DataFrame( d['data'], columns=d['features'] )
+    # concatenate the target
+    target = d['target']
+    df['target'] = target
+    return df
 
+#
+# Helper to drop all rings
+#
+def drop_ring_columns( df , rings=100):
+    if type(rings) is int:
+        rings = [idx for idx in range(rings)]
+    df.drop( ['trig_L2_cl_ring_%d'%i for i in rings], axis=1, inplace=True )
 
 
 #
@@ -22,20 +39,25 @@ class RingerDecorator(Logger):
     #
     # Constructor
     #
-    def __init__( self, tuning, generator , et_column = 'trig_L2_cl_et', eta_column = 'trig_L2_cl_eta'):
+    def __init__( self, path, generator , et_column = 'trig_L2_cl_et', eta_column = 'trig_L2_cl_eta'):
 
         Logger.__init__(self)
-
-        if type(tuning) is str:
-            MSG_INFO(self, 'Reading... %s', tuning)
-            self.__tuning, _ = load_ringer_models(tuning)
-        else:
-            # Should be a dict([models,thresholds, model_et/etabins and threshold_et/etabins])
-            self.__tuning = tuning 
+        self.path = path
         # function to prepare data input
         self.__generator = generator
         self.et_column = et_column
         self.eta_column = eta_column
+
+        # configure 
+        self.configure()
+
+
+    #
+    # Load the tuning
+    #
+    def configure(self):
+        MSG_INFO(self, 'Reading... %s', self.path)
+        self.__tuning, _ = load_ringer_models(self.path)
 
 
     #
