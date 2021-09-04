@@ -38,13 +38,14 @@ class ChainDict(Logger):
     def __call__(self, trigger, debug=False):
 
         d = {
-            'signature' : '',
+            'signature' : 'e',
             'etthr'     : 0,
-            'pidname'   : '',
-            'iso'       : '',
+            'pidname'   : 'etcut',
+            'iso'       : None,
             'extra'     : '',
             'L1Seed'    : '',
             'name'      : trigger,
+            'lhinfo'    : '',
         }
 
 
@@ -76,7 +77,7 @@ class ChainDict(Logger):
             MSG_FATAL(self, "Pidname not supported: %s",pidname)
  
         # find isolation
-        for key in allow_values['extra']:
+        for key in allow_values['iso']:
             if key in trigger:
                 d['iso'] = key
                 break
@@ -88,7 +89,7 @@ class ChainDict(Logger):
 
         for key in allow_values['lhinfo']:
             if key in trigger:
-                d['info'] = key
+                d['lhinfo'] = key
                 break
         
         if 'L1EM' in trigger:

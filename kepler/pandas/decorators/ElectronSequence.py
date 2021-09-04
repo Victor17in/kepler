@@ -19,6 +19,7 @@ from pprint import pprint
 #
 class ElectronSequence(Logger):
 
+    # NOTE: etcut triggers not supported yet
     #
     # chain = Chain("HLT_e28_lhtight_nod0_ringer_v8_ivarloose", "HLT_e28_lhtight_nod0_ivarloose", 
     #                L1Seed = 'L1_EM22VHI', l2calo_column = 'ringer_tight_v8')
@@ -58,7 +59,7 @@ class ElectronSequence(Logger):
 
         etthr = d['etthr']
         pidname = d['pidname']
-        isolation = d['iso']
+        iso = d['iso']
 
         if not self.L1Seed_column:
             self.L1Seed_column = d['L1Seed']
@@ -99,6 +100,8 @@ class ElectronSequence(Logger):
 
         if not self.hlt_column:
             self.hlt_column = 'trig_EF_el_%s' % pidname
+            if iso: # add isolation suffix
+                self.hlt_column+='_'+iso
 
         pprint ( OrderedDict( {
                 'L1Seed' : self.L1Seed_column,
@@ -162,11 +165,6 @@ class ElectronSequence(Logger):
         answer = df_temp.apply( lambda row: passed_by_hlt(row, self.hlt_etthr, self.hlt_column) , axis=1)
         df.at[answer.index, 'HLT_' + col_name] = answer
         df_temp = df.loc[df['HLT_'+col_name]==True]
-
-
-        # Filter HLT isolation
-        # should be implemented...
-
 
         MSG_INFO(self, "Approved by HLT    : %d", df_temp.shape[0])
 

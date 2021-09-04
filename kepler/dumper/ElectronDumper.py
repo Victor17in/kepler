@@ -50,6 +50,13 @@ class ElectronDumper( Algorithm ):
 
     Algorithm.initialize(self)
 
+    # TODO: This is a hack to run isolation per electron object
+    from kepler.emulator.TrigEgammaPrecisionElectronHypoTool import configure
+    self.__isoTool = configure('isolation', 'lhtight', 'ivarloose')
+    if self.__isoTool.initialize().isFailure():
+      MSG_FATAL(self, "Its not possible to initialize isolation tool standalone")
+
+
     # build map
     for etBinIdx in range(len(self.__etbins)-1):
       for etaBinIdx in range(len(self.__etabins)-1):
@@ -111,6 +118,7 @@ class ElectronDumper( Algorithm ):
                                 'trig_EF_el_lhmedium', # this is a list
                                 'trig_EF_el_lhloose', # this is a list
                                 'trig_EF_el_lhvloose', # this is a list
+                                'trig_EF_el_lhtight_ivarloose',
                                 ] )
 
 
@@ -121,6 +129,7 @@ class ElectronDumper( Algorithm ):
                                 # Offline variables
                                 'et',
                                 'eta',
+                                'etaBE2()',
                                 'phi',
                                 # offline shower shapers
                                 'rhad1',
@@ -247,8 +256,8 @@ class ElectronDumper( Algorithm ):
     event_row.append(np.array([el.accept("trig_EF_el_lhmedium") for el in elCont]))
     event_row.append(np.array([el.accept("trig_EF_el_lhloose") for el in elCont]))
     event_row.append(np.array([el.accept("trig_EF_el_lhvloose") for el in elCont]))
+    event_row.append([ (el.accept("trig_EF_el_lhtight") and self.__isoTool.isolation(el)) for el in elCont])
 
-      
     #
     # Offline variables
     #
@@ -260,6 +269,7 @@ class ElectronDumper( Algorithm ):
     # Offline Shower shapes
     event_row.append( elCont.et() )
     event_row.append( elCont.eta() )
+    event_row.append( elCont.caloCluster().etaBE2())
     event_row.append( elCont.phi() )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad1 ) )
     event_row.append( elCont.showerShapeValue( EgammaParameters.Rhad ) )

@@ -87,6 +87,8 @@ class TrigEgammaFastElectronHypoTool( Algorithm ):
       TRTHitRatio = 1e10 if NStrawHits==0 else NTRHits/float(NStrawHits)
       # apply cuts
 
+      passed = False
+
       if (pTcalo > trackPtthr):
         if (dEtaCalo < calotrackdeta):
           if (dPhiCalo < calotrackdphi):
@@ -94,7 +96,7 @@ class TrigEgammaFastElectronHypoTool( Algorithm ):
               if ( eTOverPt < calotrackdeoverp_high ):
                 if (TRTHitRatio > trtratio):
                   # TrigElectron passed all cuts: set flags
-                  bitAccept[el.getPos()] = True
+                  passed = True
                   MSG_DEBUG( self,  "Event accepted !" )
                 #TRTHitRatio
               #etOverPt
@@ -102,6 +104,9 @@ class TrigEgammaFastElectronHypoTool( Algorithm ):
           #deta
         #pt
       #apply cuts
+
+      bitAccept[el.getPos()] = passed
+
     # Loop over electrons
 
     elCont.setPos( current )

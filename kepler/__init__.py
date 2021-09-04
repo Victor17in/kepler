@@ -36,3 +36,7 @@ from .filter import *
 from . import pandas
 __all__.extend(pandas.__all__)
 from .pandas import *
+
+from . import analysis
+__all__.extend(analysis.__all__)
+from .analysis import *
