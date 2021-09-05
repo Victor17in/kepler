@@ -14,8 +14,13 @@ from Gaugi.messenger.macros import *
 from Gaugi.constants import GeV
 
 import numpy as np
+import collections
+from pprint import pprint
 
 
+#
+# Electron
+#
 class ElectronDumper( Algorithm ):
 
 
@@ -27,6 +32,7 @@ class ElectronDumper( Algorithm ):
     Algorithm.__init__(self, name)
     self.__event = {}
     self.__event_label = []
+    self.__decorators = collections.OrderedDict({})
     self.__save_these_bins = list()
     self.__extra_features = list()
     self.__outputname = output
@@ -41,6 +47,10 @@ class ElectronDumper( Algorithm ):
       key = [key]
     self.__extra_features.extend( key )
     return self
+
+
+  def decorate( self, key , f):
+    self.__decorators[key] = f
 
 
   #
@@ -118,7 +128,6 @@ class ElectronDumper( Algorithm ):
                                 'trig_EF_el_lhmedium', # this is a list
                                 'trig_EF_el_lhloose', # this is a list
                                 'trig_EF_el_lhvloose', # this is a list
-                                'trig_EF_el_lhtight_ivarloose',
                                 ] )
 
 
@@ -127,34 +136,33 @@ class ElectronDumper( Algorithm ):
     #
     self.__event_label.extend( [
                                 # Offline variables
-                                'et',
-                                'eta',
-                                'etaBE2()',
-                                'phi',
+                                'el_et',
+                                'el_eta',
+                                'el_etaBE2',
+                                'el_phi',
                                 # offline shower shapers
-                                'rhad1',
-                                'rhad',
-                                'f3',
-                                'weta2',
-                                'rphi',
-                                'reta',
-                                'wtots1',
-                                'eratio',
-                                'f1',
+                                'el_rhad1',
+                                'el_rhad',
+                                'el_f3',
+                                'el_weta2',
+                                'el_rphi',
+                                'el_reta',
+                                'el_wtots1',
+                                'el_eratio',
+                                'el_f1',
                                 # offline track
-                                'hastrack',
-                                'numberOfBLayerHits',
-                                'numberOfPixelHits',
-                                'numberOfTRTHits',
-                                'd0',
-                                'd0significance',
-                                'eProbabilityHT',
-                                'trans_TRT_PID',
-                                'deltaEta1',
-                                'deltaPhi2',
-                                'deltaPhi2Rescaled',
-                                'DeltaPOverP',
-                                'DeltaR_TaP',
+                                'el_hastrack',
+                                'el_numberOfBLayerHits',
+                                'el_numberOfPixelHits',
+                                'el_numberOfTRTHits',
+                                'el_d0',
+                                'el_d0significance',
+                                'el_eProbabilityHT',
+                                'el_trans_TRT_PID',
+                                'el_deltaEta1',
+                                'el_deltaPhi2',
+                                'el_deltaPhi2Rescaled',
+                                'el_deltaPOverP',
                                 'el_lhtight',
                                 'el_lhmedium',
                                 'el_lhloose',
@@ -162,10 +170,10 @@ class ElectronDumper( Algorithm ):
                                 ] )
 
 
-  
+    self.__event_label.extend( self.__decorators.keys() )
+
     self.__event_label.extend( self.__extra_features )
 
-    print(len(self.__event_label))
     return StatusCode.SUCCESS
 
 
@@ -184,10 +192,6 @@ class ElectronDumper( Algorithm ):
   # execute 
   #
   def execute(self, context):
-
-
-
-
 
     event_row = list()
 
@@ -217,8 +221,9 @@ class ElectronDumper( Algorithm ):
     event_row.append( fc.weta2()    )
     event_row.append( fc.wstot()    )
     event_row.append( fc.e2tsts1()  )
+
     if self.dumpRings:
-      event_row.extend( fc.ringsE()   )
+      event_row.extend( fc.ringsE() )
    
     #
     # Fast electron features
@@ -243,26 +248,27 @@ class ElectronDumper( Algorithm ):
     # Calo Cluster
     #
     clCont = context.getHandler("HLT__CaloClusterContainer")
-    event_row.append( np.array([cl.et() for cl in clCont]))
+    event_row.append( [cl.et() for cl in clCont] )
 
     
     #
     # HLT electron
     #
     elCont = context.getHandler("HLT__ElectronContainer")
-    event_row.append(np.array([el.et() for el in elCont]))
+    event_row.append([el.et() for el in elCont])
     # Adding PID LH decisions for each WP
-    event_row.append(np.array([el.accept("trig_EF_el_lhtight") for el in elCont]))
-    event_row.append(np.array([el.accept("trig_EF_el_lhmedium") for el in elCont]))
-    event_row.append(np.array([el.accept("trig_EF_el_lhloose") for el in elCont]))
-    event_row.append(np.array([el.accept("trig_EF_el_lhvloose") for el in elCont]))
-    event_row.append([ (el.accept("trig_EF_el_lhtight") and self.__isoTool.isolation(el)) for el in elCont])
+    event_row.append([el.accept("trig_EF_el_lhtight") for el in elCont]  )
+    event_row.append([el.accept("trig_EF_el_lhmedium") for el in elCont] )
+    event_row.append([el.accept("trig_EF_el_lhloose") for el in elCont]  )
+    event_row.append([el.accept("trig_EF_el_lhvloose") for el in elCont] )
+
 
     #
     # Offline variables
     #
 
-    elCont   = context.getHandler( "ElectronContainer" )
+
+    elCont = context.getHandler( "ElectronContainer" )
     trkCont  = elCont.trackParticle()
     hasTrack = True if trkCont.size()>0 else False
    
@@ -297,22 +303,30 @@ class ElectronDumper( Algorithm ):
     else:
       event_row.extend( [False, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1] )
 
-    event_row.append( elCont.deltaR() )
+
     # Adding Offline PID LH decisions
     event_row.append( elCont.accept( "el_lhtight"  ) )
     event_row.append( elCont.accept( "el_lhmedium" ) )
     event_row.append( elCont.accept( "el_lhloose"  ) )
     event_row.append( elCont.accept( "el_lhvloose" ) )
  
-    #
-    # Decorate with other decisions
-    #
 
+    #
+    # Decorate from external funcions by the client. Can be any type
+    #
+    for feature, func, in self.__decorators.items():
+      event_row.append( func(context) )
+
+
+
+    #
+    # Decorate with other decisions from emulator service
+    #
     dec = context.getHandler("MenuContainer")
-
     for feature in self.__extra_features:
       passed = dec.accept(feature).getCutResult('Pass')
       event_row.append( passed )
+
 
 
     etBinIdx, etaBinIdx = get_bin_indexs( fc.et()/1000., abs(fc.eta()), self.__etbins, self.__etabins, logger=self._logger )
@@ -346,6 +360,26 @@ class ElectronDumper( Algorithm ):
             }
 
         d[ 'pattern_'+key ] = np.array( self.__event[key] )
+
+        row = self.__event[key][0]
+
+        dtypes = []
+        for idx, feature in enumerate(self.__event_label):
+          if type(row[idx]) is float:
+            dtypes.append( 'float' )
+          elif type(row[idx]) is int:
+            dtypes.append('int')
+          elif type(row[idx]) is list:
+            dtypes.append('object')
+          elif type(row[idx]) is bool:
+            dtypes.append('bool')
+          elif type(row[idx]) is np.float32:
+            dtypes.append('np.float32')
+
+          d['dtypes'] = dtypes
+
+          #pprint(dtypes)
+
         MSG_INFO( self, 'Saving %s with : (%d, %d)', key, d['pattern_'+key].shape[0], d['pattern_'+key].shape[1] )
         save( d, outputname+'/'+outputname+"_"+key , protocol = 'savez_compressed')
     return StatusCode.SUCCESS

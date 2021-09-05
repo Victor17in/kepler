@@ -106,7 +106,7 @@ class Merger(Logger):
     Logger.__init__(self, **kw)
     self._nthreads = nthreads
     self._nFilesPerJob = 20
-    self._skip_these_keys = ["features", "etBins", "etaBins", "etBinIdx","etaBinIdx"]
+    self._skip_these_keys = ["features", "etBins", "etaBins", "etBinIdx","etaBinIdx","dtypes"]
     import re
     self._pat = re.compile(r'.+(?P<binID>et(?P<etBinIdx>\d+).eta(?P<etaBinIdx>\d+))\..+$')
 
@@ -161,6 +161,7 @@ class Merger(Logger):
             "etaBins"   : sgnDict["etaBins"],
             "etBinIdx"  : sgnDict["etBinIdx"],
             "etaBinIdx" : sgnDict["etaBinIdx"],
+            "dtypes"    : sgnDict["dtypes"],
             }
 
       #if not etBins:  etBins = sgnDict["etBins"]

@@ -1,5 +1,5 @@
 
-__all__ = ['load', 'drop_ring_columns', 'RingerDecorator']
+__all__ = ['RingerDecorator']
 
 from Gaugi import Logger
 from Gaugi.messenger.macros import *
@@ -10,25 +10,6 @@ import pandas as pd
 import numpy as np
 
 from kepler.utils import load_ringer_models
-
-#
-# Load npz format from kepler dumper and convert to pandas like
-#
-def load( path ):
-    d = gload(path)
-    df = pd.DataFrame( d['data'], columns=d['features'] )
-    # concatenate the target
-    target = d['target']
-    df['target'] = target
-    return df
-
-#
-# Helper to drop all rings
-#
-def drop_ring_columns( df , rings=100):
-    if type(rings) is int:
-        rings = [idx for idx in range(rings)]
-    df.drop( ['trig_L2_cl_ring_%d'%i for i in rings], axis=1, inplace=True )
 
 
 #
