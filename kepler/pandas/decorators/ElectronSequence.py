@@ -144,11 +144,16 @@ class ElectronSequence(Logger):
         # Filter EFCalo
         def passed_by_efcalo( row, etthr ):
             for et in row['trig_EF_cl_et']:
-
                 if et > etthr:
                     return True
             return False
-
+        
+        # should check this in large scale
+        #vec_f = np.vectorize( passed_by_efcalo )
+        #df_temp['EFCalo_' + col_name] = vec_f( df_temp, self.efcalo_etthr )
+        #df_temp = df.loc[df['EFCalo_'+col_name] == True]
+            
+            
         answer = df_temp.apply( lambda row: passed_by_efcalo(row, self.efcalo_etthr) , axis=1)
         df.at[answer.index, 'EFCalo_' + col_name] = answer
         df_temp = df.loc[df['EFCalo_'+col_name] == True]
